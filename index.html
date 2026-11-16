@@ -136,7 +136,7 @@
     </div>
     <div class="tabs" role="tablist" aria-label="Model">
       <button role="tab" data-model="baseline" aria-selected="false">Standard Transformer</button>
-      <button role="tab" data-model="lllm" aria-selected="true">Latent Lattice LM</button>
+      <button role="tab" data-model="lllm" aria-selected="true">Latent Lattice LM (LLLM)</button>
       <button role="tab" data-model="jacobi" aria-selected="false">LLLM + Jacobi Refiner</button>
     </div>
     <div class="switch" role="switch" aria-checked="false" tabindex="0" id="inj">
@@ -156,6 +156,7 @@
   /* ---- settings ------------------------------------------------------ */
   const HIDE_JACOBI_IN_INFERENCE = false;   // true: the Jacobi tab disappears when "Inference" is selected
   const VIDEO_DIR = 'videos/';
+  const VIDEO_VER = '?v=20261116e';          // bump when re-rendering so browsers fetch the new files
   const DEFAULT = { mode: 'train', model: 'lllm', inj: false };
   /* -------------------------------------------------------------------- */
 
@@ -173,9 +174,9 @@
     const v = document.createElement('video');
     v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
     v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-    v.poster = VIDEO_DIR + k + '-poster.jpg';
+    v.poster = VIDEO_DIR + k + '-poster.jpg' + VIDEO_VER;
     [['webm', 'video/webm'], ['mp4', 'video/mp4']].forEach(([ext, type]) => {
-      const s = document.createElement('source'); s.src = VIDEO_DIR + k + '.' + ext; s.type = type; v.appendChild(s);
+      const s = document.createElement('source'); s.src = VIDEO_DIR + k + '.' + ext + VIDEO_VER; s.type = type; v.appendChild(s);
     });
     frame.appendChild(v);
     vids[k] = v;
