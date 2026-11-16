@@ -236,5 +236,569 @@
   show(false);
 })();
 </script>
+<!-- ===================== RESULTS (interactive) ===================== -->
+<style>
+  .res { max-width: 1040px; margin: 28px auto 0; padding: 0 16px; }
+  .res-card { border: 1px solid var(--line); border-radius: 14px; padding: 22px 22px 16px; margin: 0 0 30px; background: #fff; }
+  .res-card h3 { font-family: "LM Roman 10", Georgia, serif; font-weight: 400; font-size: 1.45rem; margin: 0 0 4px; text-align: center; }
+  .res-card .sub { color: var(--muted); font-size: .95rem; line-height: 1.55; text-align: center; margin: 0 auto 14px; max-width: 760px; }
+  .res-ctrl { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin: 0 0 10px; }
+  .res-ctrl .lbl { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .res svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .res svg text { font-family: Lato, "Helvetica Neue", Arial, sans-serif; }
+  .res .bar { transition: y .5s ease, height .5s ease, x .5s ease, width .5s ease, opacity .3s; cursor: pointer; }
+  .res .dot { transition: cx .5s ease, cy .5s ease, opacity .3s; cursor: pointer; }
+  .res .muted { opacity: .25; }
+  .res-legend { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+  .res-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .res-tip { position: fixed; pointer-events: none; z-index: 50; background: rgba(29,29,31,.94); color: #fff; font-size: 12.5px; line-height: 1.5;
+    padding: 9px 12px; border-radius: 8px; max-width: 300px; opacity: 0; transition: opacity .12s; }
+  .res-tip b { font-weight: 700; }
+  .res-tip .k { color: #b8b8bd; }
+  .res-note { text-align: center; color: #b5b5ba; font-size: 12.5px; margin-top: 8px; line-height: 1.5; }
+  .res details { margin-top: 10px; font-size: 13.5px; }
+  .res summary { cursor: pointer; color: var(--muted); text-align: center; list-style: none; }
+  .res summary::-webkit-details-marker { display: none; }
+  .res summary::after { content: " ▾"; }
+  .res details[open] summary::after { content: " ▴"; }
+  .res table { border-collapse: collapse; width: 100%; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .res th, .res td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .res th:first-child, .res td:first-child { text-align: left; }
+  .res th { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .res tr.grp td { background: var(--soft); font-weight: 700; text-align: left; }
+  .res td.best { font-weight: 700; }
+  .res .tblwrap { overflow-x: auto; }
+  /* Fig 6 stepper */
+  .steps { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 4px 0 10px; flex-wrap: wrap; }
+  .steps button.nav { font: inherit; font-size: 14px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 16px; cursor: pointer; color: var(--ink); }
+  .steps button.nav:disabled { color: #c7c7cc; cursor: default; }
+  .steps .pips { display: flex; gap: 6px; }
+  .steps .pips span { width: 9px; height: 9px; border-radius: 50%; background: #d9d9de; cursor: pointer; transition: background .2s, transform .2s; }
+  .steps .pips span.on { background: var(--orange); transform: scale(1.25); }
+  .recipe { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; min-height: 34px; margin: 0 0 6px; }
+  .chip { font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); }
+  .chip.add { border-color: #bfe0c5; background: #eef8f0; }
+  .chip.rep { border-color: #f1c9c9; background: #fdf1f1; }
+  .chip.new { animation: pop .45s ease; }
+  @keyframes pop { 0% { transform: scale(.7); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+  .readout { text-align: center; font-size: 14.5px; color: var(--ink); min-height: 22px; }
+  .readout .good { color: var(--green); font-weight: 700; }
+</style>
+
+<div class="section-head" id="results">
+  <h2>Results</h2>
+  <p>Interactive versions of the main results. Hover over any bar or point for details.</p>
+</div>
+
+<section class="res">
+  <!-- ---------- Table 1 ---------- -->
+  <div class="res-card" id="t1">
+    <h3>Language modeling after 20B-token pretraining</h3>
+    <p class="sub">LLLM&nbsp;(d<sub>model</sub>,&nbsp;d<sub>r</sub>) has a vertical residual-stream width d<sub>model</sub> and horizontal-latent width d<sub>r</sub>.</p>
+    <div class="res-ctrl">
+      <span class="lbl">Eval set</span>
+      <div class="seg" id="t1-ds"></div>
+    </div>
+    <div class="res-ctrl">
+      <span class="lbl">View</span>
+      <div class="seg" id="t1-view">
+        <button data-v="bars" aria-pressed="true">Perplexity</button>
+        <button data-v="params" aria-pressed="false">vs. Parameters</button>
+        <button data-v="flops" aria-pressed="false">vs. Inference GFLOP/token</button>
+      </div>
+    </div>
+    <svg id="t1-svg" viewBox="0 0 1000 440" role="img" aria-label="Table 1 interactive chart"></svg>
+    <div class="res-legend">
+      <span><i style="background:var(--blue)"></i>Transformer</span>
+      <span><i style="background:var(--orange)"></i>LLLM (single pass)</span>
+      <span><i style="background:var(--green)"></i>LLLM + Jacobi refiner (J3)</span>
+    </div>
+    <p class="res-note"><b>GFLOP/token</b>: floating-point operations per token, excluding attention scores (which add only &asymp;&thinsp;0.1 GFLOP/token) and the embedding lookup.<br>
+      J3 runs three sweeps; its sequential rollout uses a single pass at inference (click <i>Show full table</i> for results).</p>
+    <details><summary>Show full table</summary><div class="tblwrap" id="t1-table"></div></details>
+  </div>
+
+  <!-- ---------- Token scaling ---------- -->
+  <div class="res-card" id="sc">
+    <h3>Scaling pretraining tokens: 10B &rarr; 20B &rarr; 30B</h3>
+    <p class="sub">FineWeb-Edu validation perplexity as training continues. Circle area is proportional to parameter count.</p>
+    <div class="steps">
+      <div class="seg" id="sc-seg">
+        <button data-i="0" aria-pressed="true">10B</button>
+        <button data-i="1" aria-pressed="false">20B</button>
+        <button data-i="2" aria-pressed="false">30B</button>
+      </div>
+      <button class="nav" id="sc-play">&#9654; Play</button>
+    </div>
+    <svg id="sc-svg" viewBox="0 0 1000 430" role="img" aria-label="Token scaling chart"></svg>
+    <div class="res-legend" id="sc-legend"></div>
+    <p class="readout" id="sc-readout" style="margin-top:10px"></p>
+    <p class="readout" style="margin-top:6px">Both LLLMs use only <b>22 layers</b> vs. 40 for the Transformer 40L, so with the same attention width (1024) they keep a <span class="good">45% smaller KV cache</span>.</p>
+  </div>
+
+  <!-- ---------- Residual-stream comparison (Fig. 3) ---------- -->
+  <div class="res-card" id="rs">
+    <h3>Lattice of Latents vs. prior residual-stream enhancements</h3>
+    <p class="sub">400M models, 20B FineWeb-Edu tokens. Lattice models narrow the vertical width from 1024 to 932 to stay iso-parameter.
+      The Transformer and its single enhancements appear first, then the Lattice and its single enhancements, then two-enhancement combinations.</p>
+    <div class="steps">
+      <div class="pips" id="rs-pips"></div>
+      <button class="nav" id="rs-play">&#10073;&#10073; Pause</button>
+    </div>
+    <div class="readout" id="rs-readout"></div>
+    <svg id="rs-svg" viewBox="0 0 1000 440" role="img" aria-label="Residual-stream comparison chart"></svg>
+    <div class="res-legend">
+      <span><i style="background:#8e8e93;border-radius:50%"></i>Transformer variants</span>
+      <span><i style="background:var(--orange);border-radius:50%"></i>Lattice variants (ours)</span>
+    </div>
+    <p class="res-note">HC: hyper-connections; mHC: manifold-constrained HC; value: value residual (ResFormer; learned weights for the single +value runs, fixed 0.5 in x0 + value); x0: nanochat-style input residual.</p>
+  </div>
+
+  <!-- ---------- Figure 6 ---------- -->
+  <div class="res-card" id="f6">
+    <h3>Deconstructing the Lattice</h3>
+    <p class="sub">A hard regime: the vertical residual stream is squeezed to 256 dimensions.
+      Press play to add the horizontal-update enhancements one at a time and watch them recover most of the gap to a full-width Transformer. 10B-token pretraining.</p>
+    <div class="steps">
+      <button class="nav" id="f6-prev">&larr; Back</button>
+      <div class="pips" id="f6-pips"></div>
+      <button class="nav" id="f6-next">Next &rarr;</button>
+      <button class="nav" id="f6-all">Show all</button>
+      <button class="nav" id="f6-play">&#9654; Play</button>
+    </div>
+    <div class="recipe" id="f6-recipe"></div>
+    <div class="readout" id="f6-readout"></div>
+    <svg id="f6-svg" viewBox="0 0 1000 400" role="img" aria-label="Figure 6 interactive chart"></svg>
+    <p class="res-note"><span style="color:var(--green)">+</span> adds a component; <span style="color:#c0392b">&#8635;</span> replaces one. Parameter counts are shown under each bar.</p>
+  </div>
+  <!-- ---------- Recurrent backbones ---------- -->
+  <div class="res-card" id="rb">
+    <h3>Recurrent backbones</h3>
+    <p class="sub">Pure vs. Lattice recurrent models (&sim;405M parameters, 10B FineWeb-Edu tokens) across native-state sizes per mixer. Each Lattice model is iso-parameter with its pure counterpart.
+      Bars appear from highest to lowest perplexity, each at its state-size position.</p>
+    <div class="steps">
+      <div class="seg" id="rb-seg">
+        <button data-k="mamba" aria-pressed="false">Mamba2</button>
+        <button data-k="gdn" aria-pressed="true">GDN</button>
+        <button data-k="tri" aria-pressed="false">Triadic GDN</button>
+        <button data-k="hyb" aria-pressed="false">GDN&ndash;Mamba2 hybrid</button>
+      </div>
+      <button class="nav" id="rb-play">&#8635; Replay</button>
+      <button class="nav" id="rb-all">Show all</button>
+    </div>
+    <div class="readout" id="rb-readout"></div>
+    <svg id="rb-svg" viewBox="0 0 1000 400" role="img" aria-label="Recurrent backbone perplexity chart"></svg>
+    <div class="res-legend" style="margin-top:12px">
+      <span><i style="background:#a1a1a6"></i>Pure backbone</span>
+      <span><i style="background:var(--orange)"></i>+ Lattice (ours)</span>
+    </div>
+    <p class="res-note">Native-state size counts recurrent-memory entries per mixer (1K = 1024 scalars), excluding the horizontal latents and convolution states. Lattice models use input injection + vstream.</p>
+  </div>
+</section>
+<div class="res-tip" id="res-tip"></div>
+
+<script>
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const C = { T: '#4E95D9', L: '#C04F15', J: '#2E7D3A', Tlight: '#b9cde3' };
+  const tip = document.getElementById('res-tip');
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  const showTip = (ev, html) => { tip.innerHTML = html; tip.style.opacity = 1; moveTip(ev); };
+  const moveTip = (ev) => { const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14;
+    if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; tip.style.left = x + 'px'; tip.style.top = y + 'px'; };
+  const hideTip = () => { tip.style.opacity = 0; };
+  const hover = (node, html) => { node.addEventListener('mouseenter', (e) => showTip(e, html())); node.addEventListener('mousemove', moveTip); node.addEventListener('mouseleave', hideTip); };
+
+  /* ======================= Table 1 ======================= */
+  const DS = [['fw', 'FineWeb-Edu'], ['pile', 'Pile'], ['lo', 'LAMBADA (OAI)'], ['ls', 'LAMBADA (Std.)'], ['nemo', 'Nemotron-CC']];
+  const ROWS = [
+    { g: '400M', name: 'Transformer (d<sub>model</sub>=1024)', short: 'Transformer 24L', t: 'T', p: 406.7, ft: .71, fi: .71, fw: 15.410, pile: 26.276, lo: 41.172, ls: 73.648, nemo: 14.768, ref: true },
+    { g: '400M', name: 'LLLM (945, 256)', short: 'LLLM (945,256)', t: 'L', p: 406.5, ft: .72, fi: .72, fw: 14.545, pile: 25.031, lo: 38.835, ls: 65.780, nemo: 14.278 },
+    { g: '400M', name: 'LLLM (908, 256) inj+vs', short: 'LLLM (908,256) inj+vs', t: 'L', p: 405.6, ft: .72, fi: .72, fw: 14.400, pile: 24.100, lo: 38.513, ls: 63.259, nemo: 14.116 },
+    { g: '400M', name: 'LLLM-410 J3 (945, 256)', short: 'LLLM J3 (945,256)', t: 'J', p: 406.9, ft: 1.85, fi: 1.85, fw: 14.026, pile: 24.107, lo: 37.531, ls: 62.923, nemo: 13.694 },
+    { g: '400M', name: '&nbsp;&nbsp;&#8627; J3, sequential rollout at inference', short: '↳ J3, sequential rollout', t: 'J', p: 406.9, ft: 1.85, fi: .72, fw: 14.733, pile: 25.461, lo: 38.737, ls: 68.398, nemo: null, faded: true, tableOnly: true },
+    { g: '500M', name: 'LLLM (512, 512), 40L', short: 'LLLM (512,512) 40L', t: 'L', p: 495.2, ft: .94, fi: .94, fw: 14.368, pile: 24.972, lo: 38.119, ls: 64.649, nemo: 14.127 },
+    { g: '600M', name: 'Transformer (d<sub>model</sub>=1620)', short: 'Transformer d=1620', t: 'T', p: 603.3, ft: 1.04, fi: 1.04, fw: 14.690, pile: 24.443, lo: 38.666, ls: 68.939, nemo: 14.018 },
+    { g: '600M', name: 'Transformer (d<sub>model</sub>=1472)', short: 'Transformer d=1472', t: 'T', p: 606.2, ft: 1.06, fi: 1.06, fw: 14.649, pile: 24.610, lo: 39.272, ls: 67.624, nemo: 14.221 },
+    { g: '600M', name: 'Transformer 40L (d<sub>model</sub>=1024)', short: 'Transformer 40L', t: 'T', ref: true, p: 609.1, ft: 1.11, fi: 1.11, fw: 14.400, pile: 24.234, lo: 38.624, ls: 67.508, nemo: 13.883 },
+    { g: '600M', name: 'LLLM (1024, 1024)', short: 'LLLM (1024,1024)', t: 'L', p: 603.0, ft: 1.10, fi: 1.10, fw: 13.704, pile: 24.200, lo: 37.012, ls: 60.132, nemo: 13.443 },
+  ];
+  const t1 = { ds: 'fw', view: 'bars' };
+  const dsSeg = document.getElementById('t1-ds');
+  DS.forEach(([k, n]) => { const b = document.createElement('button'); b.dataset.k = k; b.textContent = n; b.setAttribute('aria-pressed', k === t1.ds); dsSeg.appendChild(b);
+    b.addEventListener('click', () => { t1.ds = k; dsSeg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.k === k)); drawT1(); }); });
+  document.querySelectorAll('#t1-view button').forEach((b) => b.addEventListener('click', () => { t1.view = b.dataset.v;
+    document.querySelectorAll('#t1-view button').forEach((x) => x.setAttribute('aria-pressed', x === b)); drawT1(); }));
+  const tipRow = (r) => () => {
+    const ref = ROWS.find((x) => x.g === r.g && x.ref) || ROWS[0];
+    const refName = ref.short;
+    const v = r[t1.ds], rv = ref[t1.ds];
+    const d = v != null && r !== ref ? ` <span class="k">(${((v - rv) / rv * 100).toFixed(1)}% vs. ${refName})</span>` : '';
+    return `<b>${r.name}</b><br><span class="k">Params</span> ${r.p.toFixed(1)}M &nbsp; <span class="k">GFLOP/tok</span> ${r.ft === r.fi ? r.fi.toFixed(2) : r.ft.toFixed(2) + ' train / ' + r.fi.toFixed(2) + ' infer'}<br>` +
+      `<span class="k">${DS.find((x) => x[0] === t1.ds)[1]}</span> <b>${v == null ? '—' : v.toFixed(2)}</b>${d}`;
+  };
+  function drawT1() {
+    const svg = document.getElementById('t1-svg'); svg.innerHTML = '';
+    const rows = ROWS.filter((r) => r[t1.ds] != null && !r.tableOnly);
+    const vals = rows.map((r) => r[t1.ds]);
+    const lo = Math.min(...vals), hi = Math.max(...vals), pad = (hi - lo) * .12;
+    if (t1.view === 'bars') {
+      svg.setAttribute('viewBox', '0 0 1000 ' + (40 + rows.length * 36 + 30 + 40));
+      const X0 = 300, X1 = 930, vmin = Math.max(0, lo - pad * 2.5), vmax = hi + pad;
+      const sx = (v) => X0 + (v - vmin) / (vmax - vmin) * (X1 - X0);
+      for (let k = 0; k <= 5; k++) { const v = vmin + (vmax - vmin) * k / 5, x = sx(v);
+        el('line', { x1: x, x2: x, y1: 24, y2: 40 + rows.length * 36 + 28, stroke: '#eee' }, svg);
+        el('text', { x, y: 18, 'text-anchor': 'middle', 'font-size': 12, fill: '#a1a1a6' }, svg).textContent = v.toFixed(1); }
+      let y = 34, lastG = null;
+      ROWS.forEach((r) => {
+        if (r[t1.ds] == null || r.tableOnly) return;
+        if (r.g !== lastG) { if (lastG) y += 10; el('text', { x: 8, y: y + 14, 'font-size': 12, 'font-weight': 700, fill: '#6e6e73', 'letter-spacing': '.08em' }, svg).textContent = r.g + ' PARAMS'; y += 24; lastG = r.g; }
+        const v = r[t1.ds], col = C[r.t];
+        el('text', { x: 290, y: y + 17, 'text-anchor': 'end', 'font-size': 14, fill: r.faded ? '#8e8e93' : '#1d1d1f' }, svg).textContent = r.short;
+        const b = el('rect', { class: 'bar', x: X0, y: y + 3, width: Math.max(2, sx(v) - X0), height: 22, rx: 4, fill: col, opacity: r.faded ? .45 : 1 }, svg);
+        const best = Math.min(...ROWS.filter((x) => x.g === r.g && x[t1.ds] != null).map((x) => x[t1.ds]));
+        el('text', { x: sx(v) + 6, y: y + 19, 'font-size': 13, 'font-weight': v === best ? 700 : 400, fill: '#1d1d1f' }, svg).textContent = v.toFixed(2);
+        hover(b, tipRow(r)); y += 30;
+      });
+    } else {
+      svg.setAttribute('viewBox', '0 0 1000 440');
+      const key = t1.view === 'params' ? 'p' : 'fi';
+      const xs = rows.map((r) => r[key]), xlo = Math.min(...xs), xhi = Math.max(...xs), xp = (xhi - xlo) * .1;
+      const L = 80, R = 960, T = 20, B = 380;
+      const sx = (v) => L + (v - (xlo - xp)) / ((xhi + xp) - (xlo - xp)) * (R - L);
+      const sy = (v) => B - (v - (lo - pad)) / ((hi + pad) - (lo - pad)) * (B - T);
+      for (let k = 0; k <= 5; k++) { const v = lo - pad + (hi - lo + 2 * pad) * k / 5, y = sy(v);
+        el('line', { x1: L, x2: R, y1: y, y2: y, stroke: '#eee' }, svg);
+        el('text', { x: L - 10, y: y + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#a1a1a6' }, svg).textContent = v.toFixed(1); }
+      for (let k = 0; k <= 5; k++) { const v = xlo - xp + (xhi - xlo + 2 * xp) * k / 5, x = sx(v);
+        el('text', { x, y: B + 20, 'text-anchor': 'middle', 'font-size': 12, fill: '#a1a1a6' }, svg).textContent = key === 'p' ? v.toFixed(0) + 'M' : v.toFixed(2); }
+      el('text', { x: (L + R) / 2, y: B + 44, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, svg).textContent = key === 'p' ? 'Parameters (M)' : 'Inference GFLOP/token';
+      el('text', { x: 18, y: (T + B) / 2, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73', transform: `rotate(-90 18 ${(T + B) / 2})` }, svg).textContent = 'Perplexity ↓';
+      const pts = rows.map((r) => ({ r, cx: sx(r[key]), cy: sy(r[t1.ds]) }));
+      // greedy label placement: right, left, above, below; avoid other labels, dots and the plot edges
+      const boxes = [], hit = (b) => b.x0 < L || b.x1 > R + 30 || b.y0 < T - 14 || b.y1 > B ||
+        boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0) ||
+        pts.some((o) => o.cx + 9 > b.x0 && o.cx - 9 < b.x1 && o.cy + 9 > b.y0 && o.cy - 9 < b.y1);
+      pts.slice().sort((a, b) => a.cx - b.cx || a.cy - b.cy).forEach((q) => {
+        const w = 6.4 * q.r.short.length;
+        const cands = [['start', q.cx + 14, q.cy + 4], ['end', q.cx - 14, q.cy + 4], ['middle', q.cx, q.cy - 15], ['middle', q.cx, q.cy + 25], ['start', q.cx + 6, q.cy - 14], ['end', q.cx - 6, q.cy - 14], ['start', q.cx + 6, q.cy + 24], ['end', q.cx - 6, q.cy + 24]];
+        const box = (c) => { const x0 = c[0] === 'start' ? c[1] : c[0] === 'end' ? c[1] - w : c[1] - w / 2; return { x0, x1: x0 + w, y0: c[2] - 11, y1: c[2] + 3 }; };
+        const ov = (b, o) => Math.max(0, Math.min(b.x1, o.x1) - Math.max(b.x0, o.x0)) * Math.max(0, Math.min(b.y1, o.y1) - Math.max(b.y0, o.y0));
+        const cost = (b) => boxes.reduce((t, o) => t + ov(b, o), 0) + pts.reduce((t, o) => t + ov(b, { x0: o.cx - 9, x1: o.cx + 9, y0: o.cy - 9, y1: o.cy + 9 }), 0) + (b.x0 < L || b.x1 > R + 30 ? 1e5 : 0);
+        let pick = cands.find((c) => !hit(box(c)));
+        if (!pick) pick = cands.reduce((a, c) => (cost(box(c)) < cost(box(a)) ? c : a));
+        boxes.push(box(pick));
+        [q.anchor, q.lx, q.ly] = pick;
+      });
+      pts.forEach(({ r, cx, cy, anchor, lx, ly }) => {
+        const d = el('circle', { class: 'dot', cx, cy, r: 9, fill: C[r.t], opacity: r.faded ? .45 : .95, stroke: '#fff', 'stroke-width': 2 }, svg);
+        el('text', { x: lx, y: ly, 'text-anchor': anchor, 'font-size': 12.5, fill: r.faded ? '#8e8e93' : '#1d1d1f' }, svg).textContent = r.short;
+        hover(d, tipRow(r));
+      });
+    }
+    // table
+    const best = {}; ['400M', '500M', '600M'].forEach((g) => DS.forEach(([k]) => { best[g + k] = Math.min(...ROWS.filter((r) => r.g === g && r[k] != null).map((r) => r[k])); }));
+    let h = '<table><tr><th>Model</th><th>Params (M)</th><th>GFLOP/tok train</th><th>GFLOP/tok infer</th>' + DS.map(([, n]) => `<th>${n}</th>`).join('') + '</tr>';
+    let g0 = null;
+    ROWS.forEach((r) => { if (r.g !== g0) { h += `<tr class="grp"><td colspan="9">${r.g}-parameter models</td></tr>`; g0 = r.g; }
+      h += `<tr><td>${r.name}</td><td>${r.p.toFixed(1)}</td><td>${r.ft.toFixed(2)}</td><td>${r.fi.toFixed(2)}</td>` +
+        DS.map(([k]) => `<td class="${r[k] === best[r.g + k] && r.g !== '500M' ? 'best' : ''}">${r[k] == null ? '—' : r[k].toFixed(2)}</td>`).join('') + '</tr>'; });
+    document.getElementById('t1-table').innerHTML = h + '</table>';
+  }
+  drawT1();
+
+  /* ======================= Token scaling ======================= */
+  const TOK = [10, 20, 30];
+  const SC = [
+    { k: 'b24', ps: '406M', name: 'Transformer 24L', p: 406.7, col: '#9cc0e6', dash: '7 5', v: [16.84, 15.41, 14.72] },
+    { k: 'l406', ps: '406M, 22L', name: 'LLLM', p: 406.5, col: '#e0946b', dash: '', v: [15.56, 14.40, 13.92] },
+    { k: 'b40', ps: '609M', name: 'Transformer 40L', p: 609.1, col: C.T, dash: '2 4', v: [15.76, 14.40, 13.80] },
+    { k: 'l603', ps: '603M, 22L', name: 'LLLM (1024, 1024)', p: 603.0, col: C.L, dash: '', v: [14.78, 13.70, 13.19] },
+  ];
+  const scSvg = document.getElementById('sc-svg');
+  const sL = 80, sR = 760, sT = 20, sB = 370, yLo = 12.9, yHi = 17.1;
+  const sxs = (t) => sL + 40 + (t - 10) / 20 * (sR - sL - 80);
+  const sys = (v) => sB - (v - yLo) / (yHi - yLo) * (sB - sT);
+  const rad = (p) => 8 * Math.sqrt(p / 406.7);
+  for (let v = 13; v <= 17; v += .5) { const y = sys(v);
+    el('line', { x1: sL, x2: sR, y1: y, y2: y, stroke: '#f0f0f2' }, scSvg);
+    el('text', { x: sL - 10, y: y + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#a1a1a6' }, scSvg).textContent = v.toFixed(1); }
+  TOK.forEach((t) => { el('line', { x1: sxs(t), x2: sxs(t), y1: sT, y2: sB, stroke: '#f0f0f2' }, scSvg);
+    el('text', { x: sxs(t), y: sB + 22, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, scSvg).textContent = t + 'B'; });
+  el('text', { x: (sL + sR) / 2, y: sB + 48, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, scSvg).textContent = 'Pretraining tokens';
+  el('text', { x: 18, y: (sT + sB) / 2, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73', transform: `rotate(-90 18 ${(sT + sB) / 2})` }, scSvg).textContent = 'FineWeb-Edu perplexity ↓';
+  const scTip = (m, i) => () => {
+    const ref = SC[0], dv = m === ref ? '' : ` <span class="k">(${((m.v[i] - ref.v[i]) / ref.v[i] * 100).toFixed(1)}% vs. Transformer 24L)</span>`;
+    return `<b>${m.name}</b> <span class="k">@ ${TOK[i]}B tokens</span><br><span class="k">Params</span> ${m.p.toFixed(1)}M<br><span class="k">FineWeb-Edu</span> <b>${m.v[i].toFixed(2)}</b>${dv}`;
+  };
+  const segs = [], dots = [], tags = [];
+  SC.forEach((m) => {
+    segs.push([0, 1].map((i) => el('line', { x1: sxs(TOK[i]), y1: sys(m.v[i]), x2: sxs(TOK[i + 1]), y2: sys(m.v[i + 1]), stroke: m.col, 'stroke-width': 2.6,
+      'stroke-dasharray': m.dash, 'stroke-linecap': 'round', opacity: 0, style: 'transition: opacity .5s' }, scSvg)));
+  });
+  SC.forEach((m) => {
+    dots.push(TOK.map((t, i) => { const d = el('circle', { class: 'dot', cx: sxs(t), cy: sys(m.v[i]), r: rad(m.p), fill: m.col, stroke: '#fff', 'stroke-width': 2, opacity: 0, style: 'transition: opacity .5s' }, scSvg);
+      hover(d, scTip(m, i)); return d; }));
+    const g = el('g', { opacity: 0, style: 'transition: opacity .4s, transform .5s' }, scSvg);
+    el('line', { x1: 0, x2: 22, y1: 0, y2: 0, stroke: m.col, 'stroke-width': 2.6, 'stroke-dasharray': m.dash, 'stroke-linecap': 'round' }, g);
+    const tx = el('text', { x: 30, y: 4.5, 'font-size': 13, fill: '#1d1d1f' }, g);
+    tags.push({ g, tx });
+  });
+  document.getElementById('sc-legend').innerHTML = SC.map((m) => `<span><i style="width:26px;height:0;border-radius:0;background:none;border-top:3px ${m.dash ? (m.dash[0] === '2' ? 'dotted' : 'dashed') : 'solid'} ${m.col};vertical-align:3px"></i>${m.name} (${m.ps})</span>`).join('');
+  SC.map((m, j) => j).sort((a, b) => SC[b].p - SC[a].p).forEach((j) => dots[j].forEach((d) => scSvg.insertBefore(d, tags[0].g)));  // smaller circles on top
+  let scStep = 0, scTimer = null;
+  function scRender() {
+    SC.forEach((m, j) => {
+      dots[j].forEach((d, i) => d.setAttribute('opacity', i <= scStep ? (i === scStep ? .95 : .55) : 0));
+      segs[j].forEach((s, i) => s.setAttribute('opacity', i < scStep ? .9 : 0));
+    });
+    // end-of-line labels, pushed apart vertically so equal values do not collide
+    const lab = SC.map((m, j) => ({ j, y: sys(m.v[scStep]) })).sort((a, b) => a.y - b.y);
+    for (let k = 1; k < lab.length; k++) if (lab[k].y - lab[k - 1].y < 20) lab[k].y = lab[k - 1].y + 20;
+    lab.forEach(({ j, y }) => { const m = SC[j];
+      tags[j].tx.textContent = `${m.name} ${m.v[scStep].toFixed(2)}`;
+      tags[j].g.setAttribute('transform', `translate(${sxs(TOK[scStep]) + rad(m.p) + 12} ${y})`); tags[j].g.setAttribute('opacity', 1); });
+    document.querySelectorAll('#sc-seg button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.i === scStep));
+    const [b24, l406, b40, l603] = SC.map((m) => m.v[scStep]);
+    const cmp = (a, b) => (a < b ? `is <span class="good">lower</span> than` : a === b ? '<b>matches</b>' : 'is within ' + (a - b).toFixed(2) + ' of');
+    document.getElementById('sc-readout').innerHTML = `At <b>${TOK[scStep]}B</b> tokens, the 406M LLLM ${cmp(l406, b40)} the 609M Transformer 40L (${b40.toFixed(2)}), ` +
+      `and LLLM (1024, 1024) leads the 609M Transformer by <span class="good">${(b40 - l603).toFixed(2)}</span> perplexity.`;
+  }
+  const scGo = (i) => { scStep = i; scRender(); };
+  document.querySelectorAll('#sc-seg button').forEach((b) => b.addEventListener('click', () => { clearInterval(scTimer); scGo(+b.dataset.i); }));
+  const scPlay = () => { clearInterval(scTimer); scGo(0); let i = 0;
+    scTimer = setInterval(() => { i++; if (i > 2) { clearInterval(scTimer); return; } scGo(i); }, 1300); };
+  document.getElementById('sc-play').addEventListener('click', scPlay);
+
+  scRender();
+
+  /* ======================= Residual-stream comparison ======================= */
+  const RS = [
+    { n: 'Transformer', p: 406.65, v: 15.409, t: 'T', say: 'The plain 24-layer Transformer (d<sub>model</sub>=1024): <b>15.41</b>.' },
+    { n: 'Transformer + HC', p: 407.03, v: 15.284, t: 'T', say: 'Hyper-connections: <b>15.28</b>.' },
+    { n: 'Transformer + mHC', p: 411.36, v: 14.934, t: 'T', say: 'Manifold-constrained hyper-connections: <b>14.93</b>.' },
+    { n: 'Transformer + value', p: 406.65, v: 14.578, t: 'T', say: 'Learned value residuals: <b>14.58</b>.' },
+    { n: 'Transformer + x0', p: 406.65, v: 14.344, t: 'T', say: 'Input residual (x0), the strongest single enhancement: <b>14.34</b>.' },
+    { n: 'Lattice', p: 405.52, v: 14.465, t: 'L', say: 'The Lattice alone: <b>14.47</b>, better than HC, mHC and value residuals.' },
+    { n: 'Lattice + HC', p: 405.85, v: 14.212, t: 'L', say: 'Lattice + HC: <b>14.21</b>, <span class="good">7.0% below</span> Transformer + HC.' },
+    { n: 'Lattice + value', p: 405.52, v: 14.133, t: 'L', say: 'Lattice + value: <b>14.13</b>, <span class="good">3.1% below</span> Transformer + value.' },
+    { n: 'Transformer + HC + x0', p: 407.03, v: 14.224, t: 'T', say: 'Combining enhancements helps the Transformer: HC + x0 reaches <b>14.22</b>.' },
+    { n: 'Transformer + x0 + value', p: 406.65, v: 14.161, t: 'T', say: 'The best Transformer composition, x0 + value: <b>14.16</b>.' },
+    { n: 'Lattice + HC + x0', p: 405.85, v: 13.613, t: 'L', say: 'Lattice + HC + x0: <b>13.61</b>, <span class="good">11.7% below the Transformer</span> and 3.9% below the best Transformer composition.' },
+  ];
+  RS.forEach((d, i) => { d.st = i; });
+  const RS_STEPS = RS.map((d) => d.say);
+  const rsSvg = document.getElementById('rs-svg');
+  const rL = 90, rR = 940, rT = 20, rB = 370, rxLo = 404.9, rxHi = 412, ryLo = 13.4, ryHi = 15.6;
+  const rsx = (v) => rL + (v - rxLo) / (rxHi - rxLo) * (rR - rL);
+  const rsy = (v) => rB - (v - ryLo) / (ryHi - ryLo) * (rB - rT);
+  for (let v = 13.5; v <= 15.5001; v += .5) { const y = rsy(v);
+    el('line', { x1: rL, x2: rR, y1: y, y2: y, stroke: '#f0f0f2' }, rsSvg);
+    el('text', { x: rL - 10, y: y + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#a1a1a6' }, rsSvg).textContent = v.toFixed(1); }
+  for (let v = 405; v <= 412; v += 1) el('text', { x: rsx(v), y: rB + 20, 'text-anchor': 'middle', 'font-size': 12, fill: '#a1a1a6' }, rsSvg).textContent = v + 'M';
+  el('text', { x: (rL + rR) / 2, y: rB + 46, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, rsSvg).textContent = 'Parameters (M)';
+  el('text', { x: 20, y: (rT + rB) / 2, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73', transform: `rotate(-90 20 ${(rT + rB) / 2})` }, rsSvg).textContent = 'FineWeb-Edu perplexity ↓';
+  const RS_COL = { T: '#8e8e93', L: C.L };
+  // greedy label placement (computed once with all points present)
+  const rpts = RS.map((d) => ({ d, cx: rsx(d.p), cy: rsy(d.v) }));
+  const rboxes = [];
+  const rov = (b, o) => Math.max(0, Math.min(b.x1, o.x1) - Math.max(b.x0, o.x0)) * Math.max(0, Math.min(b.y1, o.y1) - Math.max(b.y0, o.y0));
+  rpts.slice().sort((a, b) => a.cx - b.cx || a.cy - b.cy).forEach((q) => {
+    const w = 6.6 * q.d.n.length;
+    const cands = [['start', q.cx + 13, q.cy + 4], ['end', q.cx - 13, q.cy + 4], ['start', q.cx + 8, q.cy - 12], ['start', q.cx + 8, q.cy + 20],
+      ['end', q.cx - 8, q.cy - 12], ['end', q.cx - 8, q.cy + 20], ['middle', q.cx, q.cy - 15], ['middle', q.cx, q.cy + 25]];
+    const box = (c) => { const x0 = c[0] === 'start' ? c[1] : c[0] === 'end' ? c[1] - w : c[1] - w / 2; return { x0, x1: x0 + w, y0: c[2] - 11, y1: c[2] + 3 }; };
+    const cost = (b) => rboxes.reduce((t, o) => t + rov(b, o), 0) + rpts.reduce((t, o) => t + rov(b, { x0: o.cx - 9, x1: o.cx + 9, y0: o.cy - 9, y1: o.cy + 9 }), 0) +
+      (b.x0 < rL + 4 || b.x1 > rR + 50 || b.y0 < rT - 14 || b.y1 > rB ? 1e6 : 0);
+    const pick = cands.reduce((a, c) => (cost(box(c)) < cost(box(a)) ? c : a));
+    rboxes.push(box(pick)); [q.anchor, q.lx, q.ly] = pick;
+  });
+  const rnodes = rpts.map((q) => {
+    const g = el('g', { style: 'transition: opacity .45s' }, rsSvg);
+    const c = el('circle', { class: 'dot', cx: q.cx, cy: q.cy, r: 11, fill: RS_COL[q.d.t], stroke: '#fff', 'stroke-width': 2 }, g);
+    const tx = el('text', { x: q.lx, y: q.ly, 'text-anchor': q.anchor, 'font-size': 12.5, fill: '#1d1d1f' }, g); tx.textContent = q.d.n;
+    hover(c, () => `<b>${q.d.n}</b><br><span class="k">Params</span> ${q.d.p.toFixed(1)}M<br><span class="k">FineWeb-Edu PPL</span> <b>${q.d.v.toFixed(2)}</b>` +
+      (q.d.st ? ` <span class="k">(${((q.d.v - 15.409) / 15.409 * 100).toFixed(1)}% vs. Transformer)</span>` : ''));
+    return { d: q.d, g, c, tx };
+  });
+  const RS_N = RS_STEPS.length;
+  let rsStep = 0, rsTimer = null, rsPaused = false;
+  const rsPips = document.getElementById('rs-pips');
+  for (let i = 0; i < RS_N; i++) { const sp = document.createElement('span'); sp.addEventListener('click', () => rsGo(i)); rsPips.appendChild(sp); }
+  function rsRender() {
+    rnodes.forEach(({ d, g, c, tx }) => {
+      g.setAttribute('opacity', d.st <= rsStep ? 1 : 0);
+      tx.setAttribute('font-weight', d.st === rsStep ? 700 : 400);
+    });
+    document.getElementById('rs-readout').innerHTML = RS_STEPS[rsStep];
+    rsPips.querySelectorAll('span').forEach((sp, i) => sp.classList.toggle('on', i === rsStep));
+  }
+  // continuous loop: one point every 1.6 s, hold the full picture for 4 s, then restart
+  const rsBtn = document.getElementById('rs-play');
+  const rsTick = () => { clearTimeout(rsTimer); if (rsPaused) return;
+    rsTimer = setTimeout(() => { rsStep = rsStep >= RS_N - 1 ? 0 : rsStep + 1; rsRender(); rsTick(); }, rsStep >= RS_N - 1 ? 4000 : 1600); };
+  const rsSetPaused = (p) => { rsPaused = p; rsBtn.innerHTML = p ? '&#9654; Play' : '&#10073;&#10073; Pause'; if (p) clearTimeout(rsTimer); else rsTick(); };
+  function rsGo(i) { rsStep = i; rsRender(); rsSetPaused(true); }
+  rsBtn.addEventListener('click', () => rsSetPaused(!rsPaused));
+  rsRender();
+  let rsSeen = false;
+  new IntersectionObserver((es) => { if (es[0].isIntersecting && !rsSeen) { rsSeen = true; rsTick(); } }, { threshold: .35 }).observe(rsSvg);
+
+  /* ======================= Recurrent backbones ======================= */
+  const RB_SIZES = ['16K', '32K', '64K', '128K', '256K'];
+  const RB = {
+    mamba: { n: 'Mamba2', P: [17.05, 16.81, 16.60, 16.43, 16.21], L: [16.68, 16.44, 16.31, 16.14, 16.11] },
+    gdn: { n: 'GDN', P: [16.70, 16.38, 16.29, 16.20, 16.11], L: [16.27, 16.13, 16.05, 16.01, 15.92] },
+    tri: { n: 'Triadic GDN', P: [16.82, 16.51, 16.32, 16.24, 16.09], L: [16.48, 16.24, 15.98, 16.01, 15.90] },
+    hyb: { n: 'GDN–Mamba2 hybrid', P: [16.46, 16.28, 16.14, 15.96, 15.92], L: [16.32, 16.12, 16.01, 15.91, 15.85] },
+  };
+  const rbSvg = document.getElementById('rb-svg');
+  const RX0 = 80, RX1 = 975, RT = 30, RBOT = 340, RY0 = 15.6, RY1 = 17.2;
+  const ry = (v) => RBOT - (v - RY0) / (RY1 - RY0) * (RBOT - RT);
+  for (let v = 15.6; v <= 17.21; v += 0.2) {
+    el('line', { x1: RX0, x2: RX1, y1: ry(v), y2: ry(v), stroke: '#ececf0' }, rbSvg);
+    el('text', { x: RX0 - 10, y: ry(v) + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#86868b' }, rbSvg).textContent = v.toFixed(1);
+  }
+  el('text', { x: 22, y: (RT + RBOT) / 2, transform: `rotate(-90 22 ${(RT + RBOT) / 2})`, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, rbSvg).textContent = 'FineWeb-Edu perplexity ↓';
+  el('line', { x1: RX0, x2: RX1, y1: RBOT, y2: RBOT, stroke: '#c7c7cc' }, rbSvg);
+  const GW = (RX1 - RX0) / 5, BW = 58, BG = 8;
+  const rbBars = [];
+  RB_SIZES.forEach((sz, i) => {
+    const cx = RX0 + GW * (i + .5);
+    el('text', { x: cx, y: RBOT + 24, 'text-anchor': 'middle', 'font-size': 14, fill: '#1d1d1f', 'font-weight': 700 }, rbSvg).textContent = sz;
+    ['P', 'L'].forEach((t, j) => {
+      const x = cx + (j === 0 ? -BW - BG / 2 : BG / 2);
+      const r = el('rect', { class: 'bar', x, width: BW, y: RBOT, height: 0, rx: 3, fill: t === 'P' ? '#a1a1a6' : C.L, opacity: 0 }, rbSvg);
+      const tv = el('text', { x: x + BW / 2, y: RBOT - 8, 'text-anchor': 'middle', 'font-size': 13, fill: '#1d1d1f', opacity: 0, style: 'transition: y .5s ease, opacity .3s' }, rbSvg);
+      const o = { i, t, r, tv };
+      hover(r, () => { const d = RB[rbKey], v = d[t][i], pv = d.P[i];
+        return `<b>${t === 'P' ? 'Pure' : 'Lattice'} ${d.n}, ${sz}</b><br><span class="k">FineWeb-Edu PPL</span> <b>${v.toFixed(2)}</b>` +
+          (t === 'L' ? `<br><span class="k">vs. pure ${sz}</span> ${((v - pv) / pv * 100).toFixed(1)}%` : ''); });
+      rbBars.push(o);
+    });
+  });
+  el('text', { x: RX0 + GW * .5 - BW / 2 - BG / 2, y: RBOT + 42, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#86868b' }, rbSvg).textContent = 'pure';
+  el('text', { x: RX0 + GW * .5 + BW / 2 + BG / 2, y: RBOT + 42, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#86868b' }, rbSvg).textContent = 'Lattice';
+  el('text', { x: (RX0 + RX1) / 2, y: RBOT + 58, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, rbSvg).textContent = 'Native-state size per mixer';
+  let rbKey = 'gdn', rbOrder = [], rbStep = 0, rbTimer = null;
+  const rbSay = (o) => { const d = RB[rbKey], sz = RB_SIZES[o.i], v = d[o.t][o.i];
+    if (o.t === 'P') return `Pure ${d.n}, ${sz}: <b>${v.toFixed(2)}</b>.`;
+    let s = `Lattice ${d.n}, ${sz}: <b>${v.toFixed(2)}</b>, <span class="good">${((d.P[o.i] - v) / d.P[o.i] * 100).toFixed(1)}% below</span> pure ${sz}`;
+    let k = -1; for (let j = 4; j > o.i; j--) if (d.P[j] > v) { k = j; break; }
+    if (k > 0) s += `, and below pure ${RB_SIZES[k]} (${d.P[k].toFixed(2)}) with <b>${2 ** (k - o.i)}&times; fewer</b> state entries`;
+    return s + '.'; };
+  const rbSummary = () => { const d = RB[rbKey], g = d.P.map((p, i) => (p - d.L[i]) / p * 100);
+    return `${d.n}: the Lattice lowers perplexity at <b>every</b> state size, by <span class="good">${Math.min(...g).toFixed(1)}–${Math.max(...g).toFixed(1)}%</span>.`; };
+  function rbRender() {
+    const d = RB[rbKey];
+    rbBars.forEach((o) => { const v = d[o.t][o.i], on = rbOrder.indexOf(o) < rbStep, cur = rbOrder.indexOf(o) === rbStep - 1;
+      o.r.setAttribute('y', on ? ry(v) : RBOT); o.r.setAttribute('height', on ? RBOT - ry(v) : 0); o.r.setAttribute('opacity', on ? 1 : 0);
+      o.r.setAttribute('stroke', cur && rbStep <= 10 ? '#1d1d1f' : 'none'); o.r.setAttribute('stroke-width', 1.5);
+      o.tv.textContent = v.toFixed(2); o.tv.setAttribute('y', (on ? ry(v) : RBOT) - 8); o.tv.setAttribute('opacity', on ? 1 : 0);
+      o.tv.setAttribute('font-weight', cur && rbStep <= 10 ? 700 : 400); });
+    document.getElementById('rb-readout').innerHTML = rbStep === 0 ? '&nbsp;' : rbStep > 10 ? rbSummary() : rbSay(rbOrder[rbStep - 1]);
+  }
+  function rbPlay() { clearInterval(rbTimer); rbStep = 0; rbRender();
+    rbTimer = setInterval(() => { rbStep++; rbRender(); if (rbStep >= 10) { clearInterval(rbTimer); setTimeout(() => { if (rbStep >= 10) { rbStep = 11; rbRender(); } }, 1800); } }, 1400); }
+  function rbSet(k, play) { rbKey = k; const d = RB[k];
+    rbOrder = rbBars.slice().sort((a, b) => d[b.t][b.i] - d[a.t][a.i]);
+    document.querySelectorAll('#rb-seg button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.k === k));
+    if (play) rbPlay(); else { clearInterval(rbTimer); rbStep = 11; rbRender(); } }
+  document.querySelectorAll('#rb-seg button').forEach((b) => b.addEventListener('click', () => rbSet(b.dataset.k, true)));
+  document.getElementById('rb-play').addEventListener('click', () => rbPlay());
+  document.getElementById('rb-all').addEventListener('click', () => { clearInterval(rbTimer); rbStep = 11; rbRender(); });
+  rbSet('gdn', false); rbStep = 0; rbRender();
+  let rbSeen = false;
+  new IntersectionObserver((es) => { if (es[0].isIntersecting && !rbSeen) { rbSeen = true; rbPlay(); } }, { threshold: .35 }).observe(rbSvg);
+
+  /* ======================= Figure 6 ======================= */
+  const F6 = [
+    { k: 'tsmall', label: 'Trans(512,0)', sub: '24L', p: 203.3, v: 18.87, t: 'T', recipe: [] },
+    { k: 'base', label: 'base', p: 215.8, v: 19.58, t: 'L', recipe: [], say: 'Base LLLM(256,768): horizontal capacity alone does not compensate for a 256-d residual stream.' },
+    { k: 'j3', label: '+J3', p: 219.3, v: 18.95, t: 'L', recipe: [['add', 'Jacobi refiner (J3)']], say: 'Top-to-bottom Jacobi refinement alone.' },
+    { k: 'inj', label: '+in-inj', p: 222.1, v: 18.55, t: 'L', recipe: [['add', 'input injection']], say: 'Input injection alone (separately from J3).' },
+    { k: 'vs', label: '+vstream', p: 250.4, v: 17.96, t: 'L', recipe: [['add', 'input injection'], ['add', 'vstream']] },
+    { k: 'dec', label: 'decoding 512', p: 263.8, v: 17.62, t: 'L', recipe: [['add', 'input injection'], ['add', 'vstream'], ['rep', 'decoding head (d<sub>s</sub>=512)']] },
+    { k: 'blk', label: 'E1/L20/D1', p: 294.7, v: 17.42, t: 'L', recipe: [['add', 'input injection'], ['add', 'vstream'], ['rep', 'decoding head (d<sub>s</sub>=512)'], ['rep', 'E1/L20/D1 layout']] },
+    { k: 'ds', label: 'decoding 1024', p: 320.9, v: 17.18, t: 'L', recipe: [['add', 'input injection'], ['add', 'vstream'], ['rep', 'decoding head (d<sub>s</sub>=512)'], ['rep', 'E1/L20/D1 layout'], ['rep', 'decoding (d<sub>s</sub>=1024)']] },
+    { k: 'tbig', label: 'Trans(1024,0)', sub: '24L', p: 406.7, v: 16.94, t: 'T', recipe: [] },
+    { k: 'g908', label: 'LLLM(908,256)', p: 405.6, v: 15.43, t: 'G', recipe: [['', 'LLLM(908,256)'], ['add', 'input injection'], ['add', 'vstream']],
+      say: 'With a 908-d vertical stream instead of 256, the same recipe beats the 406.7M Transformer outright.' },
+  ];
+  const LLLM = F6.filter((d) => d.t !== 'T');   // red ablation bars, then the green LLLM(908,256)
+  const NSTEP = LLLM.length;      // step i shows LLLM[0..i]
+  const LAST_RED = F6.filter((d) => d.t === 'L').length - 1;
+  let step = 0, prevRecipe = [];
+  const pips = document.getElementById('f6-pips');
+  for (let i = 0; i < NSTEP; i++) { const s = document.createElement('span'); s.title = LLLM[i].label; s.addEventListener('click', () => go(i)); pips.appendChild(s); }
+  document.getElementById('f6-prev').addEventListener('click', () => go(step - 1));
+  document.getElementById('f6-next').addEventListener('click', () => go(step + 1));
+  document.getElementById('f6-all').addEventListener('click', () => go(NSTEP - 1));
+  let f6Timer = null;
+  const f6Play = () => { clearInterval(f6Timer); go(0, true); let i = 0;
+    f6Timer = setInterval(() => { i++; if (i >= NSTEP) { clearInterval(f6Timer); return; } go(i, true); }, 1500); };
+  document.getElementById('f6-play').addEventListener('click', f6Play);
+  const svg6 = document.getElementById('f6-svg');
+  const Y0 = 15, Y1 = 20.5, T6 = 30, B6 = 320, L6 = 60, R6 = 990;
+  const sy6 = (v) => B6 - (v - Y0) / (Y1 - Y0) * (B6 - T6);
+  const slot = (R6 - L6) / F6.length, bw = slot * .62;
+  for (let v = 15; v <= 20.5; v += .5) { const y = sy6(v);
+    el('line', { x1: L6, x2: R6, y1: y, y2: y, stroke: '#f0f0f2' }, svg6);
+    el('text', { x: L6 - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#a1a1a6' }, svg6).textContent = v.toFixed(1); }
+  el('text', { x: 14, y: (T6 + B6) / 2, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73', transform: `rotate(-90 14 ${(T6 + B6) / 2})` }, svg6).textContent = 'FineWeb-Edu perplexity ↓';
+  const refLine = (d, dash) => { const y = sy6(d.v);
+    el('line', { x1: L6, x2: R6, y1: y, y2: y, stroke: C.T, 'stroke-dasharray': dash, 'stroke-width': 1.2, opacity: .6 }, svg6); };
+  refLine(F6[0], '5 5'); refLine(F6.find((d) => d.k === 'tbig'), '2 4');
+  const nodes = F6.map((d, i) => {
+    const cx = L6 + slot * i + slot / 2;
+    const g = el('g', {}, svg6);
+    const col = d.t === 'T' ? C.Tlight : d.t === 'G' ? C.J : C.L;
+    const r = el('rect', { class: 'bar', x: cx - bw / 2, y: B6, width: bw, height: 0, rx: 4, fill: col }, g);
+    const tv = el('text', { x: cx, y: B6 - 6, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: '#1d1d1f', opacity: 0 }, g); tv.textContent = d.v.toFixed(2);
+    const xl = el('g', { style: 'transition: opacity .4s' }, g);
+    el('text', { x: cx, y: B6 + 18, 'text-anchor': 'middle', 'font-size': 12, fill: '#a1a1a6' }, xl).textContent = d.p.toFixed(1) + 'M';
+    const lb = el('text', { x: cx, y: B6 + 38, 'text-anchor': 'middle', 'font-size': 13, fill: '#1d1d1f' }, xl); lb.textContent = d.label;
+    if (d.sub) el('text', { x: cx, y: B6 + 55, 'text-anchor': 'middle', 'font-size': 12, fill: '#6e6e73' }, xl).textContent = d.sub;
+    hover(r, () => `<b>${d.t === 'T' ? d.label + ' Transformer' : d.t === 'G' ? d.label + ' + input injection + vstream' : 'LLLM(256,768): ' + d.label}</b><br><span class="k">Params</span> ${d.p.toFixed(1)}M<br><span class="k">FineWeb-Edu PPL</span> <b>${d.v.toFixed(2)}</b>` +
+      (d.t === 'G' ? `<br><span class="k">vs. Trans(1024,0)</span> ${(d.v - 16.94).toFixed(2)} (${((d.v - 16.94) / 16.94 * 100).toFixed(1)}%)` : '') +
+      (d.t === 'L' ? `<br><span class="k">vs. base</span> ${(d.v - 19.58).toFixed(2)} &nbsp; <span class="k">gap to Trans(1024,0)</span> ${(d.v - 16.94).toFixed(2)}` : ''));
+    return { d, r, tv, g, xl };
+  });
+  const lg = el('g', { transform: `translate(${R6 - 250} ${T6 - 8})` }, svg6);
+  const lgItem = (y, col, txt) => { const g = el('g', { transform: `translate(0 ${y})`, style: 'transition: opacity .5s' }, lg);
+    el('rect', { x: 0, y: -10, width: 13, height: 13, rx: 3, fill: col }, g);
+    el('text', { x: 20, y: 1, 'font-size': 13, fill: '#1d1d1f' }, g).textContent = txt; return g; };
+  lgItem(0, C.Tlight, 'Transformer');
+  const lgRed = lgItem(22, C.L, 'LLLM(256,768) ablations');
+  const lgGreen = lgItem(44, C.J, 'LLLM(908,256) + inj + vstream');
+  function render() {
+    nodes.forEach(({ d, r, tv, g, xl }) => {
+      const idx = LLLM.indexOf(d);
+      const visible = d.t === 'T' || idx <= step;
+      const y = sy6(d.v);
+      r.setAttribute('y', visible ? y : B6); r.setAttribute('height', visible ? B6 - y : 0);
+      tv.setAttribute('y', (visible ? y : B6) - 8); tv.setAttribute('opacity', visible ? 1 : 0); xl.setAttribute('opacity', visible ? 1 : 0);
+      r.setAttribute('opacity', d.t === 'L' && idx !== step ? .55 : 1);
+    });
+    const cur = LLLM[step];
+    const names = cur.recipe.map((x) => x[1]);
+    document.getElementById('f6-recipe').innerHTML = (cur.recipe.length ? cur.recipe : [['', 'base: LLLM(256,768) · base update · E4/L16/D4 · J0']]).map(([t, n]) =>
+      `<span class="chip ${t} ${prevRecipe.includes(n) ? '' : 'new'}">${t === 'add' ? '<span style="color:var(--green);font-weight:700">+</span> ' : t === 'rep' ? '<span style="color:#c0392b;font-weight:700">&#8635;</span> ' : ''}${n}</span>`).join('');
+    prevRecipe = names;
+    const gap0 = 19.58 - 16.94, closed = (19.58 - cur.v) / gap0 * 100;
+    document.getElementById('f6-readout').innerHTML = cur.t === 'G' ? `${cur.say} Perplexity <b>${cur.v.toFixed(2)}</b> vs. 16.94 (<span class="good">${((cur.v - 16.94) / 16.94 * 100).toFixed(1)}%</span>) at ${cur.p.toFixed(1)}M parameters.` : step === 0 ? (cur.say || '') :
+      `${cur.say ? cur.say + ' ' : ''}Perplexity <b>${cur.v.toFixed(2)}</b>: closes <span class="good">${closed.toFixed(0)}%</span> of the gap to the 406.7M Transformer with ${((1 - cur.p / 406.7) * 100).toFixed(0)}% fewer parameters.`;
+    lgRed.setAttribute('opacity', 1);
+    lgGreen.setAttribute('opacity', step > LAST_RED ? 1 : 0);
+    pips.querySelectorAll('span').forEach((s, i) => s.classList.toggle('on', i === step));
+    document.getElementById('f6-prev').disabled = step === 0;
+    document.getElementById('f6-next').disabled = step === NSTEP - 1;
+  }
+  function go(i, auto) { if (!auto) clearInterval(f6Timer); step = Math.max(0, Math.min(NSTEP - 1, i)); render(); }
+  go(NSTEP - 1);
+})();
+</script>
+<!-- =================== /RESULTS =================== -->
+
 <!-- <footer>&copy; 2026 the authors.</footer> -->
 </body></html>
