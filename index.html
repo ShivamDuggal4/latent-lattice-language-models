@@ -322,19 +322,9 @@
   <!-- ---------- Token scaling ---------- -->
   <div class="res-card" id="sc">
     <h3>Scaling pretraining tokens: 10B &rarr; 20B &rarr; 30B</h3>
-    <p class="sub">FineWeb-Edu validation perplexity as training continues. Circle area is proportional to parameter count.</p>
-    <div class="steps">
-      <div class="seg" id="sc-seg">
-        <button data-i="0" aria-pressed="true">10B</button>
-        <button data-i="1" aria-pressed="false">20B</button>
-        <button data-i="2" aria-pressed="false">30B</button>
-      </div>
-      <button class="nav" id="sc-play">&#9654; Play</button>
-    </div>
-    <svg id="sc-svg" viewBox="0 0 1000 430" role="img" aria-label="Token scaling chart"></svg>
-    <div class="res-legend" id="sc-legend"></div>
-    <p class="readout" id="sc-readout" style="margin-top:10px"></p>
-    <p class="readout" style="margin-top:6px">Both LLLMs use only <b>22 layers</b> vs. 40 for the Transformer 40L, so with the same attention width (1024) they keep a <span class="good">45% smaller KV cache</span>.</p>
+    <p class="sub">FineWeb-Edu validation perplexity as training continues. Circle area is proportional to parameter count. The Jacobi model runs its middle Lattice layers three times per token.</p>
+    <img src="images/token-scaling.gif" alt="Animated token-scaling chart: Transformer 24L, Transformer 40L, Lattice 400M, Lattice 600M and Lattice 400M with Jacobi refinement at 10B, 20B and 30B tokens" style="width:100%;height:auto;display:block;margin-top:8px" loading="lazy">
+    <p class="readout" style="margin-top:6px">All Lattice models use only <b>22 layers</b> vs. 40 for the Transformer 40L, so with the same attention width (1024) they keep a <span class="good">45% smaller KV cache</span>.</p>
   </div>
 
   <!-- ---------- Residual-stream comparison (Fig. 3) ---------- -->
@@ -507,71 +497,6 @@
     document.getElementById('t1-table').innerHTML = h + '</table>';
   }
   drawT1();
-
-  /* ======================= Token scaling ======================= */
-  const TOK = [10, 20, 30];
-  const SC = [
-    { k: 'b24', ps: '406M', name: 'Transformer 24L', p: 406.7, col: '#9cc0e6', dash: '7 5', v: [16.84, 15.41, 14.72] },
-    { k: 'l406', ps: '406M, 22L', name: 'LLLM', p: 406.5, col: '#e0946b', dash: '', v: [15.56, 14.40, 13.92] },
-    { k: 'b40', ps: '609M', name: 'Transformer 40L', p: 609.1, col: C.T, dash: '2 4', v: [15.76, 14.40, 13.80] },
-    { k: 'l603', ps: '603M, 22L', name: 'LLLM (1024, 1024)', p: 603.0, col: C.L, dash: '', v: [14.78, 13.70, 13.19] },
-  ];
-  const scSvg = document.getElementById('sc-svg');
-  const sL = 80, sR = 760, sT = 20, sB = 370, yLo = 12.9, yHi = 17.1;
-  const sxs = (t) => sL + 40 + (t - 10) / 20 * (sR - sL - 80);
-  const sys = (v) => sB - (v - yLo) / (yHi - yLo) * (sB - sT);
-  const rad = (p) => 8 * Math.sqrt(p / 406.7);
-  for (let v = 13; v <= 17; v += .5) { const y = sys(v);
-    el('line', { x1: sL, x2: sR, y1: y, y2: y, stroke: '#f0f0f2' }, scSvg);
-    el('text', { x: sL - 10, y: y + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#a1a1a6' }, scSvg).textContent = v.toFixed(1); }
-  TOK.forEach((t) => { el('line', { x1: sxs(t), x2: sxs(t), y1: sT, y2: sB, stroke: '#f0f0f2' }, scSvg);
-    el('text', { x: sxs(t), y: sB + 22, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, scSvg).textContent = t + 'B'; });
-  el('text', { x: (sL + sR) / 2, y: sB + 48, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73' }, scSvg).textContent = 'Pretraining tokens';
-  el('text', { x: 18, y: (sT + sB) / 2, 'text-anchor': 'middle', 'font-size': 13, fill: '#6e6e73', transform: `rotate(-90 18 ${(sT + sB) / 2})` }, scSvg).textContent = 'FineWeb-Edu perplexity ↓';
-  const scTip = (m, i) => () => {
-    const ref = SC[0], dv = m === ref ? '' : ` <span class="k">(${((m.v[i] - ref.v[i]) / ref.v[i] * 100).toFixed(1)}% vs. Transformer 24L)</span>`;
-    return `<b>${m.name}</b> <span class="k">@ ${TOK[i]}B tokens</span><br><span class="k">Params</span> ${m.p.toFixed(1)}M<br><span class="k">FineWeb-Edu</span> <b>${m.v[i].toFixed(2)}</b>${dv}`;
-  };
-  const segs = [], dots = [], tags = [];
-  SC.forEach((m) => {
-    segs.push([0, 1].map((i) => el('line', { x1: sxs(TOK[i]), y1: sys(m.v[i]), x2: sxs(TOK[i + 1]), y2: sys(m.v[i + 1]), stroke: m.col, 'stroke-width': 2.6,
-      'stroke-dasharray': m.dash, 'stroke-linecap': 'round', opacity: 0, style: 'transition: opacity .5s' }, scSvg)));
-  });
-  SC.forEach((m) => {
-    dots.push(TOK.map((t, i) => { const d = el('circle', { class: 'dot', cx: sxs(t), cy: sys(m.v[i]), r: rad(m.p), fill: m.col, stroke: '#fff', 'stroke-width': 2, opacity: 0, style: 'transition: opacity .5s' }, scSvg);
-      hover(d, scTip(m, i)); return d; }));
-    const g = el('g', { opacity: 0, style: 'transition: opacity .4s, transform .5s' }, scSvg);
-    el('line', { x1: 0, x2: 22, y1: 0, y2: 0, stroke: m.col, 'stroke-width': 2.6, 'stroke-dasharray': m.dash, 'stroke-linecap': 'round' }, g);
-    const tx = el('text', { x: 30, y: 4.5, 'font-size': 13, fill: '#1d1d1f' }, g);
-    tags.push({ g, tx });
-  });
-  document.getElementById('sc-legend').innerHTML = SC.map((m) => `<span><i style="width:26px;height:0;border-radius:0;background:none;border-top:3px ${m.dash ? (m.dash[0] === '2' ? 'dotted' : 'dashed') : 'solid'} ${m.col};vertical-align:3px"></i>${m.name} (${m.ps})</span>`).join('');
-  SC.map((m, j) => j).sort((a, b) => SC[b].p - SC[a].p).forEach((j) => dots[j].forEach((d) => scSvg.insertBefore(d, tags[0].g)));  // smaller circles on top
-  let scStep = 0, scTimer = null;
-  function scRender() {
-    SC.forEach((m, j) => {
-      dots[j].forEach((d, i) => d.setAttribute('opacity', i <= scStep ? (i === scStep ? .95 : .55) : 0));
-      segs[j].forEach((s, i) => s.setAttribute('opacity', i < scStep ? .9 : 0));
-    });
-    // end-of-line labels, pushed apart vertically so equal values do not collide
-    const lab = SC.map((m, j) => ({ j, y: sys(m.v[scStep]) })).sort((a, b) => a.y - b.y);
-    for (let k = 1; k < lab.length; k++) if (lab[k].y - lab[k - 1].y < 20) lab[k].y = lab[k - 1].y + 20;
-    lab.forEach(({ j, y }) => { const m = SC[j];
-      tags[j].tx.textContent = `${m.name} ${m.v[scStep].toFixed(2)}`;
-      tags[j].g.setAttribute('transform', `translate(${sxs(TOK[scStep]) + rad(m.p) + 12} ${y})`); tags[j].g.setAttribute('opacity', 1); });
-    document.querySelectorAll('#sc-seg button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.i === scStep));
-    const [b24, l406, b40, l603] = SC.map((m) => m.v[scStep]);
-    const cmp = (a, b) => (a < b ? `is <span class="good">lower</span> than` : a === b ? '<b>matches</b>' : 'is within ' + (a - b).toFixed(2) + ' of');
-    document.getElementById('sc-readout').innerHTML = `At <b>${TOK[scStep]}B</b> tokens, the 406M LLLM ${cmp(l406, b40)} the 609M Transformer 40L (${b40.toFixed(2)}), ` +
-      `and LLLM (1024, 1024) leads the 609M Transformer by <span class="good">${(b40 - l603).toFixed(2)}</span> perplexity.`;
-  }
-  const scGo = (i) => { scStep = i; scRender(); };
-  document.querySelectorAll('#sc-seg button').forEach((b) => b.addEventListener('click', () => { clearInterval(scTimer); scGo(+b.dataset.i); }));
-  const scPlay = () => { clearInterval(scTimer); scGo(0); let i = 0;
-    scTimer = setInterval(() => { i++; if (i > 2) { clearInterval(scTimer); return; } scGo(i); }, 1300); };
-  document.getElementById('sc-play').addEventListener('click', scPlay);
-
-  scRender();
 
   /* ======================= Residual-stream comparison ======================= */
   const RS = [
